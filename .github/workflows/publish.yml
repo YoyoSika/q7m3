@@ -1,0 +1,23 @@
+# Uploads public/ to the "files" release on every push:
+#   https://github.com/<owner>/<repo>/releases/download/files/<name>
+name: publish
+on:
+  push:
+    branches: [main]
+    paths: ["public/**"]
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  upload:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Upload
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          files=$(ls public | grep -E '^[0-9a-f]{32}$' | sed 's|^|public/|' || true)
+          [ -n "$files" ] || { echo "nothing to upload"; exit 0; }
+          gh release view files >/dev/null 2>&1 || gh release create files --title files --notes ""
+          gh release upload files $files --clobber
